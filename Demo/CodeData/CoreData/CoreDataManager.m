@@ -41,100 +41,108 @@
 }
 
 - (BOOL)createEntity:(NSString *)name block:(void(^)(NSManagedObject * _Nonnull entity))block {
-    if(!self.container) {
-        CDMLog(@"[%@] Fail: The container is nil", name);
+    @synchronized(self) {
+        if(!self.container) {
+            CDMLog(@"[%@] Fail: The container is nil", name);
+            return NO;
+        }
+        
+        NSManagedObjectContext *context = self.container.viewContext;
+        NSManagedObject *entity = [NSEntityDescription insertNewObjectForEntityForName:name inManagedObjectContext:context];
+        block(entity);
+        
+        if(context.hasChanges) {
+            if([context save:nil]) {
+                CDMLog(@"[%@] Success", name);
+                return YES;
+            }
+            else {
+                CDMLog(@"[%@] Fail", name);
+            }
+        }
         return NO;
     }
-    
-    NSManagedObjectContext *context = self.container.viewContext;
-    NSManagedObject *entity = [NSEntityDescription insertNewObjectForEntityForName:name inManagedObjectContext:context];
-    block(entity);
-    
-    if(context.hasChanges) {
-        if([context save:nil]) {
-            CDMLog(@"[%@] Success", name);
-            return YES;
-        }
-        else {
-            CDMLog(@"[%@] Fail", name);
-        }
-    }
-    return NO;
 }
 
 - (NSArray *)getEntity:(NSString *)name format:(NSString * _Nullable)format {
-    if(!self.container) {
-        CDMLog(@"[%@] Fail: The container is nil", name);
+    @synchronized(self) {
+        if(!self.container) {
+            CDMLog(@"[%@] Fail: The container is nil", name);
+            return nil;
+        }
+        
+        NSManagedObjectContext *context = self.container.viewContext;
+        NSFetchRequest *fetch = [[NSFetchRequest alloc] initWithEntityName:name];
+        if(format) {
+            fetch.predicate = [NSPredicate predicateWithFormat:format];
+        }
+        
+        NSArray *entities = [context executeFetchRequest:fetch error:nil];
+        if(entities) {
+            CDMLog(@"[%@] Success (format = %@)", name, format);
+            return entities;
+        }
+        CDMLog(@"[%@] Fail", name);
         return nil;
     }
-    
-    NSManagedObjectContext *context = self.container.viewContext;
-    NSFetchRequest *fetch = [[NSFetchRequest alloc] initWithEntityName:name];
-    if(format) {
-        fetch.predicate = [NSPredicate predicateWithFormat:format];
-    }
-    
-    NSArray *entities = [context executeFetchRequest:fetch error:nil];
-    if(entities) {
-        CDMLog(@"[%@] Success (format = %@)", name, format);
-        return entities;
-    }
-    CDMLog(@"[%@] Fail", name);
-    return nil;
 }
 
 - (BOOL)updateEntity:(NSString *)name format:(NSString * _Nullable)format block:(void(^)(NSManagedObject * _Nonnull entity))block {
-    if(!self.container) {
-        CDMLog(@"[%@] Fail: The container is nil", name);
-        return NO;
-    }
-    
-    NSManagedObjectContext *context = self.container.viewContext;
-    NSFetchRequest *fetchGroup = [[NSFetchRequest alloc] initWithEntityName:name];
-    if(format) {
-        fetchGroup.predicate = [NSPredicate predicateWithFormat:format];
-    }
-    
-    NSArray *entities = [context executeFetchRequest:fetchGroup error:nil];
-    if(entities) {
-        for(id entity in entities) {
-            block(entity);
+    @synchronized(self) {
+        if(!self.container) {
+            CDMLog(@"[%@] Fail: The container is nil", name);
+            return NO;
         }
         
-        if(context.hasChanges && [context save:nil]) {
-            CDMLog(@"[%@] Success (format = %@)", name, format);
-            return YES;
+        NSManagedObjectContext *context = self.container.viewContext;
+        NSFetchRequest *fetchGroup = [[NSFetchRequest alloc] initWithEntityName:name];
+        if(format) {
+            fetchGroup.predicate = [NSPredicate predicateWithFormat:format];
         }
+        
+        NSArray *entities = [context executeFetchRequest:fetchGroup error:nil];
+        if(entities) {
+            for(id entity in entities) {
+                block(entity);
+            }
+            
+            if(context.hasChanges && [context save:nil]) {
+                CDMLog(@"[%@] Success (format = %@)", name, format);
+                return YES;
+            }
+        }
+        CDMLog(@"[%@] Fail", name);
+        return NO;
     }
-    CDMLog(@"[%@] Fail", name);
-    return NO;
 }
 
 - (BOOL)deleteEntity:(NSString *)name format:(NSString * _Nullable)format {
-    if(!self.container) {
-        CDMLog(@"[%@] Fail: The container is nil", name);
-        return NO;
-    }
-    
-    NSManagedObjectContext *context = self.container.viewContext;
-    NSFetchRequest *fetch = [[NSFetchRequest alloc] initWithEntityName:name];
-    if(format) {
-        fetch.predicate = [NSPredicate predicateWithFormat:format];
-    }
-    
-    NSArray *entities = [context executeFetchRequest:fetch error:nil];
-    if(entities) {
-        for(id entity in entities) {
-            [context deleteObject:entity];
+    @synchronized(self) {
+        if(!self.container) {
+            CDMLog(@"[%@] Fail: The container is nil", name);
+            return NO;
         }
         
-        if(context.hasChanges && [context save:nil]) {
-            CDMLog(@"[success] delete %@ [format=%@]", name, format);
-            return YES;
+        NSManagedObjectContext *context = self.container.viewContext;
+        NSFetchRequest *fetch = [[NSFetchRequest alloc] initWithEntityName:name];
+        if(format) {
+            fetch.predicate = [NSPredicate predicateWithFormat:format];
         }
+        
+        NSArray *entities = [context executeFetchRequest:fetch error:nil];
+        if(entities) {
+            for(id entity in entities) {
+                [context deleteObject:entity];
+            }
+            
+            if(context.hasChanges && [context save:nil]) {
+                CDMLog(@"[success] delete %@ [format=%@]", name, format);
+                return YES;
+            }
+        }
+        CDMLog(@"[%@] Fail", name);
+        return NO;
     }
-    CDMLog(@"[%@] Fail", name);
-    return NO;
 }
 
 - (void)parseEntities {
