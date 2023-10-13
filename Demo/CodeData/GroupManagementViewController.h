@@ -6,7 +6,7 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "CoreDataManager.h"
+#import <NSKCoreData/NSKCoreData.h>
 
 NS_ASSUME_NONNULL_BEGIN
 

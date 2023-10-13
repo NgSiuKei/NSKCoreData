@@ -16,7 +16,6 @@
 		D7474EE92AC722AD008BE5F3 /* Model.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = D7474EE72AC722AD008BE5F3 /* Model.xcdatamodeld */; };
 		D79A31B42AD31209002C42AE /* NSKCoreData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D79A31B32AD31209002C42AE /* NSKCoreData.framework */; };
 		D79C27AD2AC7C21A0046CF45 /* GroupManagementViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D79C27AC2AC7C21A0046CF45 /* GroupManagementViewController.m */; };
-		D7A9229B2ACAE8DE0073B4A6 /* CoreDataManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D7A9229A2ACAE8DE0073B4A6 /* CoreDataManager.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,8 +34,6 @@
 		D79A31B32AD31209002C42AE /* NSKCoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NSKCoreData.framework; sourceTree = "<group>"; };
 		D79C27AB2AC7C21A0046CF45 /* GroupManagementViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GroupManagementViewController.h; sourceTree = "<group>"; };
 		D79C27AC2AC7C21A0046CF45 /* GroupManagementViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GroupManagementViewController.m; sourceTree = "<group>"; };
-		D7A922992ACAE8DE0073B4A6 /* CoreDataManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CoreDataManager.h; sourceTree = "<group>"; };
-		D7A9229A2ACAE8DE0073B4A6 /* CoreDataManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CoreDataManager.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,7 +68,7 @@
 			isa = PBXGroup;
 			children = (
 				D79A31AF2AD310DA002C42AE /* Framework */,
-				D7474EE62AC72278008BE5F3 /* CoreData */,
+				D7474EE62AC72278008BE5F3 /* CoreDataModel */,
 				D7474ECD2AC72248008BE5F3 /* AppDelegate.h */,
 				D7474ECE2AC72248008BE5F3 /* AppDelegate.m */,
 				D7474ED02AC72248008BE5F3 /* SceneDelegate.h */,
@@ -88,14 +85,12 @@
 			path = CodeData;
 			sourceTree = "<group>";
 		};
-		D7474EE62AC72278008BE5F3 /* CoreData */ = {
+		D7474EE62AC72278008BE5F3 /* CoreDataModel */ = {
 			isa = PBXGroup;
 			children = (
 				D7474EE72AC722AD008BE5F3 /* Model.xcdatamodeld */,
-				D7A922992ACAE8DE0073B4A6 /* CoreDataManager.h */,
-				D7A9229A2ACAE8DE0073B4A6 /* CoreDataManager.m */,
 			);
-			path = CoreData;
+			path = CoreDataModel;
 			sourceTree = "<group>";
 		};
 		D79A31AF2AD310DA002C42AE /* Framework */ = {
@@ -175,7 +170,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D7A9229B2ACAE8DE0073B4A6 /* CoreDataManager.m in Sources */,
 				D7474ED52AC72248008BE5F3 /* MainViewController.m in Sources */,
 				D7474ECF2AC72248008BE5F3 /* AppDelegate.m in Sources */,
 				D7474EE92AC722AD008BE5F3 /* Model.xcdatamodeld in Sources */,
@@ -359,6 +353,7 @@
 				STRIP_SWIFT_SYMBOLS = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				"USER_HEADER_SEARCH_PATHS[arch=*]" = "/Users/nusiukei/Documents/代码/远程仓库/Github/NSKCoreData/Demo/CodeData";
 			};
 			name = Debug;
 		};
@@ -399,6 +394,7 @@
 				STRIP_SWIFT_SYMBOLS = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				"USER_HEADER_SEARCH_PATHS[arch=*]" = "/Users/nusiukei/Documents/代码/远程仓库/Github/NSKCoreData/Demo/CodeData";
 			};
 			name = Release;
 		};

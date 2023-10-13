@@ -7,9 +7,8 @@
 
 #import "MainViewController.h"
 #import "GroupManagementViewController.h"
-#import "CoreDataManager.h"
 #import "Model+CoreDataModel.h"
-//#import <NSKCoreData/NSKCoreData.h>
+#import <NSKCoreData/NSKCoreData.h>
 
 @interface MainViewController ()<UITableViewDelegate, UITableViewDataSource>
 
@@ -43,19 +42,31 @@
 }
 
 - (void)updateGroupData {
-    self.groupArray = [self.manager getEntity:@"Group" format:nil];
-    for(Group *group in self.groupArray) {
-        CDMLog(@"group = [%d, %@]", group.theID, group.name);
-    }
-    self.selectedGroupID = 0;
+    __weak __typeof__(self) weakSelf = self;
+    [self.manager readEntity:@"Group" format:nil finishBlock:^(BOOL isSuccess, NSArray * _Nullable entites) {
+        __strong __typeof(self) strongSelf = weakSelf;
+        if(isSuccess) {
+            strongSelf.groupArray = entites;
+            for(Group *group in strongSelf.groupArray) {
+                CDMLog(@"group = [%d, %@]", group.theID, group.name);
+            }
+            strongSelf.selectedGroupID = 0;
+        }
+    }];
 }
 
 - (void)updateDeviceData {
-    self.deviceArray = [self.manager getEntity:@"Device" format:nil];
-    for(Device *device in self.deviceArray) {
-        CDMLog(@"device = [%d, %@]", device.theID, device.name);
-    }
-    self.selectedDeviceID = 0;
+    __weak __typeof__(self) weakSelf = self;
+    [self.manager readEntity:@"Device" format:nil finishBlock:^(BOOL isSuccess, NSArray * _Nullable entites) {
+        __strong __typeof(self) strongSelf = weakSelf;
+        if(isSuccess) {
+            strongSelf.deviceArray = entites;
+            for(Device *device in strongSelf.deviceArray) {
+                CDMLog(@"device = [%d, %@]", device.theID, device.name);
+            }
+            strongSelf.selectedDeviceID = 0;
+        }
+    }];
 }
 
 #pragma mark - UI
@@ -163,15 +174,21 @@
 #pragma mark - 按钮点击事件
 - (void)addGroupButtonClicked {
     __weak __typeof__(self) weakSelf = self;
-    [self.manager createEntity:@"Group" block:^(NSManagedObject * _Nonnull entity) {
+    [self.manager createEntity:@"Group" editBlock:^(NSManagedObject * _Nonnull entity) {
         __strong __typeof(self) strongSelf = weakSelf;
         Group *newGroup = (Group *)entity;
         newGroup.theID = (int16_t)strongSelf.groupArray.count+1;
         newGroup.name = [NSString stringWithFormat:@"第%lu组", strongSelf.groupArray.count+1];
         newGroup.contain = [NSSet new];
+    } finishBlock:^(BOOL isSuccess) {
+        if(isSuccess) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                __strong __typeof(self) strongSelf = weakSelf;
+                [strongSelf updateGroupData];
+                [strongSelf.groupView reloadData];
+            });
+        }
     }];
-    [self updateGroupData];
-    [self.groupView reloadData];
 }
 
 - (void)deleteGroupButtonClicked {
@@ -179,22 +196,35 @@
         return;
     }
     
-    [self.manager deleteEntity:@"Group" format:[NSString stringWithFormat:@"theID == %d", self.selectedGroupID]];
-    [self updateGroupData];
-    [self.groupView reloadData];
+    __weak __typeof__(self) weakSelf = self;
+    [self.manager deleteEntity:@"Group" format:[NSString stringWithFormat:@"theID == %d", self.selectedGroupID] finishBlock:^(BOOL isSuccess) {
+        if(isSuccess) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                __strong __typeof(self) strongSelf = weakSelf;
+                [strongSelf updateGroupData];
+                [strongSelf.groupView reloadData];
+            });
+        }
+    }];
 }
 
 - (void)addDeviceButtonClicked {
     __weak __typeof__(self) weakSelf = self;
-    [self.manager createEntity:@"Device" block:^(NSManagedObject * _Nonnull entity) {
+    [self.manager createEntity:@"Device" editBlock:^(NSManagedObject * _Nonnull entity) {
         __strong __typeof(self) strongSelf = weakSelf;
         Device *newDevice = (Device *)entity;
         newDevice.theID = (int16_t)strongSelf.deviceArray.count+1;
         newDevice.name = [NSString stringWithFormat:@"设备：%lu", strongSelf.deviceArray.count+1];
         newDevice.belong = [NSSet new];
+    } finishBlock:^(BOOL isSuccess) {
+        if(isSuccess) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                __strong __typeof(self) strongSelf = weakSelf;
+                [strongSelf updateDeviceData];
+                [strongSelf.deviceView reloadData];
+            });
+        }
     }];
-    [self updateDeviceData];
-    [self.deviceView reloadData];
 }
 
 - (void)deleteDeviceButtonClicked {
@@ -202,9 +232,16 @@
         return;
     }
     
-    [self.manager deleteEntity:@"Device" format:[NSString stringWithFormat:@"theID == %d", self.selectedDeviceID]];
-    [self updateDeviceData];
-    [self.deviceView reloadData];
+    __weak __typeof__(self) weakSelf = self;
+    [self.manager deleteEntity:@"Device" format:[NSString stringWithFormat:@"theID == %d", self.selectedDeviceID] finishBlock:^(BOOL isSuccess) {
+        if(isSuccess) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                __strong __typeof(self) strongSelf = weakSelf;
+                [strongSelf updateDeviceData];
+                [strongSelf.deviceView reloadData];
+            });
+        }
+    }];
 }
 
 - (void)groupManagementButtonClicked {

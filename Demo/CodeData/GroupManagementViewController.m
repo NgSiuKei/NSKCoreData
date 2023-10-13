@@ -104,7 +104,7 @@
 - (void)addDeviceButtonClicked {
     __weak __typeof__(self) weakSelf = self;
 //    [self.manager changeEntity:@"Device" format:[NSString stringWithFormat:@"theID == %d", self.selectedDeviceID] block:^(NSManagedObject * _Nonnull entity) {
-    [self.manager updateEntity:@"Device" format:@"theID == 1" block:^(NSManagedObject * _Nonnull entity) {
+    [self.manager updateEntity:@"Device" format:@"theID == 1" editBlock:^(NSManagedObject * _Nonnull entity) {
         __strong __typeof(self) strongSelf = weakSelf;
         Group *group = [strongSelf.groupArray objectAtIndex:0];
         
@@ -112,7 +112,7 @@
         NSMutableSet *groups = [device.belong mutableCopy];
         [groups addObject:group];
         device.belong = [groups copy];
-    }];
+    } finishBlock:nil];
 }
 
 - (void)deleteDeviceButtonClicked {
