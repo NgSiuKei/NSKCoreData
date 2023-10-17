@@ -23,14 +23,16 @@ NS_ASSUME_NONNULL_BEGIN
 ///   - name: The name of an entity.
 ///   - editBlock: Convert the "entity" to the type you need and set its properties.
 ///   - finishBlock: Show the result of create.  The "isSuccess" indicates whether the creation is successful.
-- (void)createEntity:(NSString *)name editBlock:(void(^)(NSManagedObject * _Nonnull entity))editBlock finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock;
+///   - isInMainThread: If you want to run everything in the main thread, set it to true, otherwise set it to false.
+- (void)createEntity:(NSString *)name editBlock:(void(^)(NSManagedObject * _Nonnull entity))editBlock finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock inMainThread:(BOOL)isInMainThread;
 
 /// Read some entities.
 /// - Parameters:
 ///   - name: The name of an entity.
 ///   - format: Filter format. Write judgment statements for filtering.
 ///   - finishBlock: Show the result of read. The  "isSuccess" indicates whether the read is successful. The "entities" is an array of entities that are read out.
-- (void)readEntity:(NSString *)name format:(NSString * _Nullable)format finishBlock:(void(^ _Nullable)(BOOL isSuccess, NSArray * _Nullable entities))finishBlock;
+///   - isInMainThread: If you want to run everything in the main thread, set it to true, otherwise set it to false.
+- (void)readEntity:(NSString *)name format:(NSString * _Nullable)format finishBlock:(void(^ _Nullable)(BOOL isSuccess, NSArray * _Nullable entities))finishBlock inMainThread:(BOOL)isInMainThread;
 
 /// Update some entities.
 /// - Parameters:
@@ -38,14 +40,16 @@ NS_ASSUME_NONNULL_BEGIN
 ///   - format: Filter format. Write judgment statements for filtering.
 ///   - editBlock: Convert the "entity" to the type you need and update its properties.
 ///   - finishBlock: Show the result of update.  The "isSuccess" indicates whether the update is successful.
-- (void)updateEntity:(NSString *)name format:(NSString * _Nullable)format editBlock:(void(^)(NSManagedObject * _Nonnull entity))editBlock finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock;
+///   - isInMainThread: If you want to run everything in the main thread, set it to true, otherwise set it to false.
+- (void)updateEntity:(NSString *)name format:(NSString * _Nullable)format editBlock:(void(^)(NSManagedObject * _Nonnull entity))editBlock finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock inMainThread:(BOOL)isInMainThread;
 
 /// Update some entities.
 /// - Parameters:
 ///   - name: The name of an entity.
 ///   - format: Filter format. Write judgment statements for filtering.
 ///   - finishBlock: Show the result of delete.  The "isSuccess" indicates whether the delete is successful.
-- (void)deleteEntity:(NSString *)name format:(NSString * _Nullable)format finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock;
+///   - isInMainThread: If you want to run everything in the main thread, set it to true, otherwise set it to false.
+- (void)deleteEntity:(NSString *)name format:(NSString * _Nullable)format finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock inMainThread:(BOOL)isInMainThread;
 
 @end
 
