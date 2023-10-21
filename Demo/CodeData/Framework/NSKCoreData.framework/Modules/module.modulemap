@@ -1,6 +1,0 @@
-framework module NSKCoreData {
-  umbrella header "NSKCoreData.h"
-
-  export *
-  module * { export * }
-}
