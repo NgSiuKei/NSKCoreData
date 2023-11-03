@@ -66,14 +66,14 @@
 }
 
 #pragma mark - Create
-- (void)createEntity:(NSString *)name editBlock:(void(^)(NSManagedObject * _Nonnull entity))editBlock finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock inMainThread:(BOOL)isInMainThread {
-    if((isInMainThread && !self.mainContext) || (!isInMainThread && !self.backgroundContext)) {
+- (void)createEntity:(NSString *)name editBlock:(void(^)(NSManagedObject * _Nonnull entity))editBlock finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock {
+    if(!self.mainContext || !self.backgroundContext) {
         CDMLog(@"[%@] Fail: The contex is nil.", name);
         if(finishBlock) finishBlock(NO);
         return;
     }
     
-    __block NSManagedObjectContext *context = isInMainThread ? self.mainContext : self.backgroundContext;
+    __block NSManagedObjectContext *context = [NSThread isMainThread] ? self.mainContext : self.backgroundContext;
     
     [context performBlock:^{
         NSManagedObject *entity = [NSEntityDescription insertNewObjectForEntityForName:name inManagedObjectContext:context];
@@ -90,7 +90,7 @@
                 CDMLog(@"[%@] Fail: Fail to save.", name);
             }
             
-            if(error) CDMLog(@"[%@] Fail: The error is \"%@\".", name, error);
+            if(error) CDMLog(@"[%@] Error: %@.", name, error);
         }
         else {
             CDMLog(@"[%@] Fail: The context hasn't changes.", name);
@@ -101,15 +101,15 @@
     }];
 }
 
-- (void)batchCreateEntity:(NSString *)name objects:(NSArray<NSDictionary<NSString *,id> *> *)objects finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock inMainThread:(BOOL)isInMainThread {
+- (void)batchCreateEntity:(NSString *)name objects:(NSArray<NSDictionary<NSString *,id> *> *)objects finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock {
     if (@available(iOS 13.0, *)) {
-        if((isInMainThread && !self.mainContext) || (!isInMainThread && !self.backgroundContext)) {
+        if(!self.mainContext || !self.backgroundContext) {
             CDMLog(@"[%@] Fail: The contex is nil.", name);
             if(finishBlock) finishBlock(NO);
             return;
         }
-    
-        __block NSManagedObjectContext *context = isInMainThread ? self.mainContext : self.backgroundContext;
+        
+        __block NSManagedObjectContext *context = [NSThread isMainThread] ? self.mainContext : self.backgroundContext;
         
         NSBatchInsertRequest *createRequest = [[NSBatchInsertRequest alloc] initWithEntityName:name objects:objects];
         createRequest.resultType = NSBatchInsertRequestResultTypeStatusOnly;
@@ -122,7 +122,7 @@
             else
                 CDMLog(@"[%@] Fail: The objects is %@.", name, objects);
             
-            if(error) CDMLog(@"[%@] Fail: The error is \"%@\".", name, error);
+            if(error) CDMLog(@"[%@] Error: %@.", name, error);
             
             if(finishBlock) finishBlock([result.result boolValue]);
             
@@ -135,51 +135,65 @@
 }
 
 #pragma mark - Read
-- (void)readEntity:(NSString *)name format:(NSString * _Nullable)format finishBlock:(void(^ _Nullable)(BOOL isSuccess, NSArray * _Nullable entities))finishBlock inMainThread:(BOOL)isInMainThread {
-    if((isInMainThread && !self.mainContext) || (!isInMainThread && !self.backgroundContext)) {
+- (void)readEntity:(NSString *)name format:(NSString * _Nullable)format finishBlock:(void(^ _Nullable)(BOOL isSuccess, NSArray * _Nullable entities))finishBlock {
+    if(!self.mainContext || !self.backgroundContext) {
         CDMLog(@"[%@] Fail: The contex is nil.", name);
         if(finishBlock) finishBlock(NO, nil);
         return;
     }
     
-    NSManagedObjectContext *context = isInMainThread ? self.mainContext : self.backgroundContext;
+    __block NSManagedObjectContext *context = [NSThread isMainThread] ? self.mainContext : self.backgroundContext;
     
     NSFetchRequest *fetch = [[NSFetchRequest alloc] initWithEntityName:name];
     if(format) {
         fetch.predicate = [NSPredicate predicateWithFormat:format];
     }
     
-    NSAsynchronousFetchRequest *asynFetch = [[NSAsynchronousFetchRequest alloc] initWithFetchRequest:fetch completionBlock:^(NSAsynchronousFetchResult * _Nonnull result) {
-        if(result.finalResult) {
+    __block void(^readBlock)(NSArray * _Nullable entities) = ^void(NSArray * _Nullable entities) {
+        if(entities) {
             CDMLog(@"[%@] Success: The format is \"%@\".", name, format);
-            if(finishBlock) finishBlock(YES, result.finalResult);
+            if(finishBlock) finishBlock(YES, entities);
         }
         else {
             if(finishBlock) finishBlock(NO, nil);
         }
-    }];
-    [context executeRequest:asynFetch error:nil];
+    };
+    
+    if([NSThread isMainThread]) {
+        NSError *error = nil;
+        NSArray *entities = [context executeFetchRequest:fetch error:&error];
+        if(error) CDMLog(@"[%@] Error: %@.", name, error);
+        readBlock(entities);
+    }
+    else {
+        NSAsynchronousFetchRequest *asynFetch = [[NSAsynchronousFetchRequest alloc] initWithFetchRequest:fetch completionBlock:^(NSAsynchronousFetchResult * _Nonnull result) {
+            readBlock(result.finalResult);
+        }];
+        NSError *error = nil;
+        [context executeRequest:asynFetch error:&error];
+        if(error) CDMLog(@"[%@] Error: %@.", name, error);
+    }
 }
 
 #pragma mark - Update
-- (void)updateEntity:(NSString *)name format:(NSString * _Nullable)format editBlock:(void(^)(NSManagedObject * _Nonnull entity))editBlock finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock inMainThread:(BOOL)isInMainThread {
-    if((isInMainThread && !self.mainContext) || (!isInMainThread && !self.backgroundContext)) {
+- (void)updateEntity:(NSString *)name format:(NSString * _Nullable)format editBlock:(void(^)(NSManagedObject * _Nonnull entity))editBlock finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock {
+    if(!self.mainContext || !self.backgroundContext) {
         CDMLog(@"[%@] Fail: The contex is nil.", name);
         if(finishBlock) finishBlock(NO);
         return;
     }
     
-    __block NSManagedObjectContext *context = isInMainThread ? self.mainContext : self.backgroundContext;
+    __block NSManagedObjectContext *context = [NSThread isMainThread] ? self.mainContext : self.backgroundContext;
     
-    NSFetchRequest *fetchGroup = [[NSFetchRequest alloc] initWithEntityName:name];
+    NSFetchRequest *fetch = [[NSFetchRequest alloc] initWithEntityName:name];
     if(format) {
-        fetchGroup.predicate = [NSPredicate predicateWithFormat:format];
+        fetch.predicate = [NSPredicate predicateWithFormat:format];
     }
-        
-    NSAsynchronousFetchRequest *asynFetch = [[NSAsynchronousFetchRequest alloc] initWithFetchRequest:fetchGroup completionBlock:^(NSAsynchronousFetchResult * _Nonnull result) {
-        if(result.finalResult) {
+    
+    __block void(^updateBlock)(NSArray *entities) = ^void(NSArray *entities) {
+        if(entities) {
             if(editBlock) {
-                [result.finalResult enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                [entities enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
                     editBlock(obj);
                 }];
             }
@@ -196,7 +210,7 @@
                         CDMLog(@"[%@] Fail: Fail to save", name);
                     }
                     
-                    if(error) CDMLog(@"[%@] Fail: The error is \"%@\".", name, error);
+                    if(error) CDMLog(@"[%@] Error: %@.", name, error);
                 }
                 else {
                     CDMLog(@"[%@] Fail: The context hasn't changes.", name);
@@ -207,18 +221,32 @@
             CDMLog(@"[%@] Fail: No entity matching the format \"%@\" could be found.", name, format);
             if(finishBlock) finishBlock(NO);
         }
-    }];
-    [context executeRequest:asynFetch error:nil];
+    };
+    
+    if([NSThread isMainThread]) {
+        NSError *error = nil;
+        NSArray *entities = [context executeFetchRequest:fetch error:&error];
+        if(error) CDMLog(@"[%@] Error: %@.", name, error);
+        updateBlock(entities);
+    }
+    else {
+        NSAsynchronousFetchRequest *asynFetch = [[NSAsynchronousFetchRequest alloc] initWithFetchRequest:fetch completionBlock:^(NSAsynchronousFetchResult * _Nonnull result) {
+            updateBlock(result.finalResult);
+        }];
+        NSError *error = nil;
+        [context executeRequest:asynFetch error:&error];
+        if(error) CDMLog(@"[%@] Error: %@.", name, error);
+    }
 }
 
-- (void)batchUpdateEntity:(NSString *)name propertiesToUpdate:(NSDictionary<NSString *,id> *)properties finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock inMainThread:(BOOL)isInMainThread {
-    if((isInMainThread && !self.mainContext) || (!isInMainThread && !self.backgroundContext)) {
+- (void)batchUpdateEntity:(NSString *)name propertiesToUpdate:(NSDictionary<NSString *,id> *)properties finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock {
+    if(!self.mainContext || !self.backgroundContext) {
         CDMLog(@"[%@] Fail: The contex is nil.", name);
         if(finishBlock) finishBlock(NO);
         return;
     }
     
-    __block NSManagedObjectContext *context = isInMainThread ? self.mainContext : self.backgroundContext;
+    __block NSManagedObjectContext *context = [NSThread isMainThread] ? self.mainContext : self.backgroundContext;
     
     NSBatchUpdateRequest *updateRequest = [[NSBatchUpdateRequest alloc] initWithEntityName:name];
     updateRequest.resultType = NSStatusOnlyResultType;
@@ -232,7 +260,7 @@
         else
             CDMLog(@"[%@] Fail: The properties is %@.", name, properties);
         
-        if(error) CDMLog(@"[%@] Fail: The error is \"%@\".", name, error);
+        if(error) CDMLog(@"[%@] Error: %@.", name, error);
         
         if(finishBlock) finishBlock([result.result boolValue]);
         
@@ -241,23 +269,23 @@
 }
 
 #pragma mark - Delete
-- (void)deleteEntity:(NSString *)name format:(NSString * _Nullable)format finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock inMainThread:(BOOL)isInMainThread {
-    if((isInMainThread && !self.mainContext) || (!isInMainThread && !self.backgroundContext)) {
+- (void)deleteEntity:(NSString *)name format:(NSString * _Nullable)format finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock {
+    if(!self.mainContext || !self.backgroundContext) {
         CDMLog(@"[%@] Fail: The contex is nil.", name);
         if(finishBlock) finishBlock(NO);
         return;
     }
     
-    __block NSManagedObjectContext *context = isInMainThread ? self.mainContext : self.backgroundContext;
+    __block NSManagedObjectContext *context = [NSThread isMainThread] ? self.mainContext : self.backgroundContext;
     
     NSFetchRequest *fetch = [[NSFetchRequest alloc] initWithEntityName:name];
     if(format) {
         fetch.predicate = [NSPredicate predicateWithFormat:format];
     }
     
-    NSAsynchronousFetchRequest *asynFetch = [[NSAsynchronousFetchRequest alloc] initWithFetchRequest:fetch completionBlock:^(NSAsynchronousFetchResult * _Nonnull result) {
-        if(result.finalResult) {
-            [result.finalResult enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+    __block void(^deleteBlock)(NSArray *entities) = ^void(NSArray *entities) {
+        if(entities) {
+            [entities enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
                 [context deleteObject:obj];
             }];
             
@@ -273,7 +301,7 @@
                         CDMLog(@"[%@] Fail: Fail to save.", name);
                     }
                     
-                    if(error) CDMLog(@"[%@] Fail: The error is \"%@\".", name, error);
+                    if(error) CDMLog(@"[%@] Error: %@.", name, error);
                 }
                 else {
                     CDMLog(@"[%@] Fail: The context hasn't changes.", name);
@@ -283,18 +311,44 @@
         else {
             if(finishBlock) finishBlock(NO);
         }
-    }];
-    [context executeRequest:asynFetch error:nil];
+    };
+    
+    if([NSThread isMainThread]) {
+        [context performBlock:^{
+            NSError *error = nil;
+            NSArray *entities = [context executeFetchRequest:fetch error:&error];
+            if(error) CDMLog(@"[%@] Error: %@.", name, error);
+            deleteBlock(entities);
+        }];
+    }
+    else {
+        [self.container performBackgroundTask:^(NSManagedObjectContext * _Nonnull newContext) {
+            context = newContext;
+            [context performBlock:^{
+                NSError *error = nil;
+                NSArray *entities = [context executeFetchRequest:fetch error:&error];
+                if(error) CDMLog(@"[%@] Error: %@.", name, error);
+                deleteBlock(entities);
+            }];
+            
+//            NSAsynchronousFetchRequest *asynFetch = [[NSAsynchronousFetchRequest alloc] initWithFetchRequest:fetch completionBlock:^(NSAsynchronousFetchResult * _Nonnull result) {
+//                deleteBlock(result.finalResult);
+//            }];
+//            NSError *error = nil;
+//            [context executeRequest:asynFetch error:&error];
+//            if(error) CDMLog(@"[%@] Error: %@.", name, error);
+        }];
+    }
 }
 
-- (void)batchDeleteEntity:(NSString *)name format:(NSString * _Nullable)format finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock inMainThread:(BOOL)isInMainThread {
-    if((isInMainThread && !self.mainContext) || (!isInMainThread && !self.backgroundContext)) {
+- (void)batchDeleteEntity:(NSString *)name format:(NSString * _Nullable)format finishBlock:(void(^ _Nullable)(BOOL isSuccess))finishBlock {
+    if(!self.mainContext || !self.backgroundContext) {
         CDMLog(@"[%@] Fail: The contex is nil.", name);
         if(finishBlock) finishBlock(NO);
         return;
     }
     
-    __block NSManagedObjectContext *context = isInMainThread ? self.mainContext : self.backgroundContext;
+    __block NSManagedObjectContext *context = [NSThread isMainThread] ? self.mainContext : self.backgroundContext;
     
     NSFetchRequest *fetch = [[NSFetchRequest alloc] initWithEntityName:name];
     if(format) {
@@ -312,7 +366,7 @@
         else
             CDMLog(@"[%@] Fail: The format is \"%@\".", name, format);
         
-        if(error) CDMLog(@"[%@] Fail: The error is \"%@\".", name, error);
+        if(error) CDMLog(@"[%@] Error: %@.", name, error);
         
         if(finishBlock) finishBlock([result.result boolValue]);
         
