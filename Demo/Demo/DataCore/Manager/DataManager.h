@@ -13,10 +13,14 @@ NS_ASSUME_NONNULL_BEGIN
 #define NSK_WeakSelf __weak __typeof__(self) weakSelf = self;
 #define NSK_StrongSelf __strong __typeof(self) strongSelf = weakSelf;
 
+#define kUUID @"uuid"
+#define kStr @"str"
+#define kNumber @"number"
+
 @protocol DataManagerDelegate <NSObject>
 
 @required
--(void)operateSuccess:(NSArray<What *> *)whats;
+-(void)operateSuccess:(NSArray<NSDictionary *> *)param;
 -(void)operateFail;
 
 @optional

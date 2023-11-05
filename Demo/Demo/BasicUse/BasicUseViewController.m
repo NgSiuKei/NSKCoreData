@@ -15,7 +15,7 @@
 @property(nonatomic,strong)DataManager *manager;
 
 @property(nonatomic,strong)NSArray *data;
-@property(nonatomic,strong)What *selectedWhat;
+@property(nonatomic,strong)NSDictionary *selectedParam;
 
 @end
 
@@ -83,18 +83,18 @@
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return self.data.count;
+    return self.data?self.data.count:0;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    What *what = [self.data objectAtIndex:indexPath.row];
+    NSDictionary *param = [self.data objectAtIndex:indexPath.row];
     
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:[NSString stringWithFormat:@"cell_%@", what.uuid]];
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:[NSString stringWithFormat:@"cell_%@", param[kUUID]]];
     if(!cell) {
-        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:[NSString stringWithFormat:@"cell_%@", what.uuid]];
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:[NSString stringWithFormat:@"cell_%@", param[kUUID]]];
     }
-    cell.textLabel.text = [NSString stringWithFormat:@"UUID:%@", what.uuid];
-    cell.detailTextLabel.text = [NSString stringWithFormat:@"number = %d", what.number];
+    cell.textLabel.text = [NSString stringWithFormat:@"UUID:%@", param[kUUID]];
+    cell.detailTextLabel.text = [NSString stringWithFormat:@"number = %@", param[kNumber]];
     
     return cell;
 }
@@ -108,18 +108,22 @@
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    self.selectedWhat = [self.data objectAtIndex:indexPath.row];
+    self.selectedParam = [self.data objectAtIndex:indexPath.row];
 }
 
 #pragma mark - DataManagerDelegate
-- (void)operateSuccess:(NSArray<What *> *)whats {
-    self.data = [whats mutableCopy];
-    [self.tableView reloadData];
+- (void)operateSuccess:(NSArray<NSDictionary *> *)param {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        self.data =[param mutableCopy];
+        if(self.tableView) [self.tableView reloadData];
+    });
 }
 
 - (void)operateFail {
-    self.data = [NSArray new];
-    [self.tableView reloadData];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        self.data = [NSArray new];
+        if(self.tableView) [self.tableView reloadData];
+    });
 }
 
 #pragma mark - Button Click
@@ -128,23 +132,17 @@
 }
 
 -(void)buttonDeleteClick {
-    if(self.selectedWhat) {
-        NSK_WeakSelf
-        __block NSUUID *uuid = [self.selectedWhat.uuid copy];
-        [self.manager remove:self.selectedWhat.uuid];
-        self.selectedWhat = nil;
+    if(self.selectedParam) {
+        [self.manager remove:self.selectedParam[kUUID]];
+        self.selectedParam = nil;
     }
 }
 
 -(void)buttonUpdateClick {
-    if(self.selectedWhat) {
-        [self.manager update:self.selectedWhat.uuid];
-        self.selectedWhat = nil;
+    if(self.selectedParam) {
+        [self.manager update:self.selectedParam[kUUID]];
+        self.selectedParam = nil;
     }
-}
-
--(void)test {
-    NSLog(@"TestTestTestTestTestTestTestTestTestTestTest");
 }
 
 @end

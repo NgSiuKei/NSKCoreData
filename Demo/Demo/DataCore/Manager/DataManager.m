@@ -13,6 +13,7 @@
 @interface DataManager()
 
 @property(nonatomic,strong)CoreDataManager *manager;
+@property(nonatomic,strong)CoreDataManagerContext *context;
 
 @end
 
@@ -22,13 +23,14 @@
     self = [super init];
     if(self) {
         self.manager = [[CoreDataManager alloc] init:@"Model"];
+        self.context = [self.manager newContext:CoreDataManagerContextRunningQueueTypeMain isRunningSynchronously:NO];
     }
     return self;
 }
 
 -(void)add {
     NSK_WeakSelf
-    [self.manager createEntity:eWhat editBlock:^(NSManagedObject * _Nonnull entity) {
+    [self.manager asyncCreateEntity:eWhat withContext:self.context editBlock:^(NSManagedObject * _Nonnull entity) {
         What *what = (What *)entity;
         what.uuid = [NSUUID UUID];
         what.str = [what.uuid UUIDString];
@@ -40,7 +42,7 @@
 }
 -(void)remove:(NSUUID *)uuid {
     NSK_WeakSelf
-    [self.manager deleteEntity:eWhat format:[NSString stringWithFormat:@"str LIKE \"%@\"", uuid.UUIDString] finishBlock:^(BOOL isSuccess) {
+    [self.manager asyncDeleteEntity:eWhat withContext:self.context format:[NSString stringWithFormat:@"str LIKE \"%@\"", uuid.UUIDString] finishBlock:^(BOOL isSuccess) {
         NSK_StrongSelf
         [strongSelf finishBlock:isSuccess];
     }];
@@ -48,20 +50,30 @@
 
 -(void)read {
     NSK_WeakSelf
-    [self.manager readEntity:eWhat format:nil finishBlock:^(BOOL isSuccess, NSArray * _Nullable entities) {
+    [self.manager asyncReadEntity:eWhat withContext:self.context format:nil finishBlock:^(BOOL isSuccess, NSArray * _Nullable entities) {
         NSK_StrongSelf
         if(strongSelf.delegate) {
-            if(isSuccess && [self.delegate respondsToSelector:@selector(operateSuccess:)])
-                [strongSelf.delegate operateSuccess:entities];
-            else if([self.delegate respondsToSelector:@selector(operateFail)])
+            if(isSuccess && [self.delegate respondsToSelector:@selector(operateSuccess:)]) {
+                NSMutableArray *param = [NSMutableArray new];
+                for(What *what in entities) {
+                    [param addObject:@{
+                        kUUID:what.uuid,
+                        kStr:what.str,
+                        kNumber:@(what.number),
+                    }];
+                }
+                [strongSelf.delegate operateSuccess:param];
+            }
+            else if([self.delegate respondsToSelector:@selector(operateFail)]) {
                 [strongSelf.delegate operateFail];
+            }
         }
     }];
 }
 
 -(void)update:(NSUUID *)uuid {
     NSK_WeakSelf
-    [self.manager updateEntity:eWhat format:[NSString stringWithFormat:@"str LIKE \"%@\"", uuid.UUIDString] editBlock:^(NSManagedObject * _Nonnull entity) {
+    [self.manager asyncUpdateEntity:eWhat withContext:self.context format:[NSString stringWithFormat:@"str LIKE \"%@\"", uuid.UUIDString] editBlock:^(NSManagedObject * _Nonnull entity) {
         What *what = (What *)entity;
         what.number += 1;
     } finishBlock:^(BOOL isSuccess) {
