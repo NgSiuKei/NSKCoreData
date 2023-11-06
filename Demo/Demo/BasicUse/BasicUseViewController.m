@@ -6,13 +6,13 @@
 //
 
 #import "BasicUseViewController.h"
-#import "DataManager.h"
+#import "BasicUseDataManager.h"
 
-@interface BasicUseViewController ()<UITableViewDelegate, UITableViewDataSource, DataManagerDelegate>
+@interface BasicUseViewController ()<UITableViewDelegate, UITableViewDataSource, BasicUseDataManagerDelegate>
 
 @property(nonatomic,strong)UITableView *tableView;
 
-@property(nonatomic,strong)DataManager *manager;
+@property(nonatomic,strong)BasicUseDataManager *manager;
 
 @property(nonatomic,strong)NSArray *data;
 @property(nonatomic,strong)NSDictionary *selectedParam;
@@ -29,7 +29,7 @@
 
 #pragma mark - Data
 - (void)buildData {
-    self.manager = [[DataManager alloc] init];
+    self.manager = [[BasicUseDataManager alloc] init:CoreDataManagerContextRunningQueueTypeMain isSync:NO];
     self.manager.delegate = self;
     [self.manager read];
 }

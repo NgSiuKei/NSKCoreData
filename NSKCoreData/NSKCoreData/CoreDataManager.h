@@ -35,6 +35,11 @@ typedef enum : NSUInteger {
 
 @interface CoreDataManager : NSObject
 
+#pragma mark - Init
+/// Initialize manager.
+/// - Parameter name: The name of the NSPersistentContainer object.
+- (instancetype)init:(NSString *)name;
+
 #pragma mark - Context
 /// Get a new context with the type of queue.
 /// - Parameter queueType: The type of queue.

@@ -377,6 +377,7 @@
             else {
                 CDMLog(@"[%@] Fail: The context hasn't changes.", name);
             }
+            if(finishBlock) finishBlock(NO);
         }
         else {
             CDMLog(@"[%@] Fail: No entity matching the format \"%@\" could be found.", name, format);
@@ -440,6 +441,7 @@
             else {
                 CDMLog(@"[%@] Fail: The context hasn't changes.", name);
             }
+            if(finishBlock) finishBlock(NO);
         }
         else {
             if(finishBlock) finishBlock(NO);

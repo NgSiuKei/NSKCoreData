@@ -7,6 +7,7 @@
 
 #import "MainViewController.h"
 #import "BasicUseViewController.h"
+#import "SynchronousAndAsynchronousViewController.h"
 
 @interface MainViewController ()<UITableViewDelegate, UITableViewDataSource>
 
@@ -68,7 +69,8 @@
         [self.navigationController pushViewController:vc animated:YES];
     }
     else if(1 == indexPath.row) {
-        
+        SynchronousAndAsynchronousViewController *vc = [[SynchronousAndAsynchronousViewController alloc] init];
+        [self.navigationController pushViewController:vc animated:YES];
     }
 }
 
